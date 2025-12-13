@@ -1,129 +1,110 @@
-import asyncio
-import aiohttp
+import os
 import uuid
-import random
-from datetime import datetime
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
-}
+load_dotenv()
 
-def generate_uuid() -> str:
-    return str(uuid.uuid4())
+EMAIL = os.getenv("LINKEDIN_EMAIL")
+PASSWORD = os.getenv("LINKEDIN_PASSWORD")
 
-def current_utc_time() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+def now():
+    return datetime.now(timezone.utc).isoformat()
 
-async def fetch(session, url):
+def init_driver():
+    options = Options()
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--no-sandbox")
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=options)
+
+def login(driver):
+    driver.get("https://www.linkedin.com/login")
+    wait = WebDriverWait(driver, 20)
+    wait.until(EC.presence_of_element_located((By.ID, "username"))).send_keys(EMAIL)
+    driver.find_element(By.ID, "password").send_keys(PASSWORD)
+    driver.find_element(By.XPATH, "//button[@type='submit']").click()
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+def scroll(driver, n=5):
+    body = driver.find_element(By.TAG_NAME, "body")
+    for _ in range(n):
+        body.send_keys(Keys.PAGE_DOWN)
+        WebDriverWait(driver, 3).until(lambda d: True)
+
+
+def scrape_linkedin_data(page_id: str):
+    driver = init_driver()
+    data = {"page": {}, "posts": [], "comments": [], "employees": []}
+
     try:
-        async with session.get(url, headers=HEADERS, timeout=10) as response:
-            if response.status != 200:
-                print(f"Failed to fetch {url}, status: {response.status}")
-                return None
-            return await response.text()
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+        login(driver)
+        base_url = f"https://www.linkedin.com/company/{page_id}/"
+        driver.get(base_url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
+        soup = BeautifulSoup(driver.page_source, "html.parser")
 
-async def scrape_page_info(session, page_id: str) -> dict:
-    url = f"https://www.linkedin.com/company/{page_id}/"
-    html = await fetch(session, url)
-
-    profile = {
-        "page_id": page_id,
-        "linkedin_id": generate_uuid(),
-        "name": page_id.capitalize(),
-        "url": url,
-        "profile_pic": "https://via.placeholder.com/150",
-        "description": "Scraped description placeholder",
-        "website": f"https://{page_id}.com",
-        "industry": "Technology",
-        "followers": random.randint(1000, 500000),
-        "head_count": random.randint(10, 5000),
-        "specialities": ["Technology", "Innovation", "Data"],
-    }
-
-    if html:
-        try:
-            soup = BeautifulSoup(html, "html.parser")
-
-            meta_title = soup.find("meta", property="og:title")
-            if meta_title:
-                profile["name"] = meta_title.get("content", "").replace(" | LinkedIn", "")
-
-            meta_desc = soup.find("meta", property="og:description")
-            if meta_desc:
-                profile["description"] = meta_desc.get("content", "")[:200]
-
-            meta_image = soup.find("meta", property="og:image")
-            if meta_image:
-                profile["profile_pic"] = meta_image.get("content", "")
-        except Exception as e:
-            print(f"Parsing error: {e}")
-
-    return profile
-
-async def scrape_posts(session, page_id: str, limit: int = 15) -> list:
-    """Generates dummy posts."""
-    posts = []
-    for i in range(limit):
-        posts.append({
+        data["page"] = {
             "page_id": page_id,
-            "post_id": generate_uuid(),
-            "content": f"This is an insightful update about {page_id} number {i + 1}.",
-            "likes": random.randint(50, 5000),
-            "comments_count": random.randint(5, 100),
-            "created_at": current_utc_time(),
-        })
-    return posts
-
-async def scrape_employees(session, page_id: str, limit: int = 5) -> list:
-    """Generates dummy employees."""
-    employees = []
-    roles = ["Software Engineer", "Product Manager", "HR Specialist", "Data Scientist"]
-    for i in range(limit):
-        employees.append({
-            "page_id": page_id,
-            "name": f"Employee {i + 1}",
-            "designation": random.choice(roles),
-            "profile_url": f"https://linkedin.com/in/employee-{i}-{page_id}",
-        })
-    return employees
-
-async def scrape_comments(session, post_id: str, page_id: str, limit: int = 5) -> list:
-    """Generates dummy comments for a post."""
-    comments = []
-    comments_text = ["Great post!", "Very informative.", "Agree completely.", "Thanks for sharing."]
-    for i in range(limit):
-        comments.append({
-            "comment_id": generate_uuid(),
-            "post_id": post_id,
-            "page_id": page_id,
-            "author_name": f"User {random.randint(100, 999)}",
-            "content": random.choice(comments_text),
-            "created_at": current_utc_time()
-        })
-    return comments
-
-async def scrape_all_data(page_id: str):
-    """Orchestrator to run all scraping tasks concurrently."""
-    async with aiohttp.ClientSession() as session:
-        # Scrape page, posts, and employees
-        page_data, posts, employees = await asyncio.gather(
-            scrape_page_info(session, page_id),
-            scrape_posts(session, page_id, limit=15),
-            scrape_employees(session, page_id, limit=5)
-        )
-
-        all_comments = []
-        for post in posts:
-            post_comments = await scrape_comments(session, post['post_id'], page_id)
-            all_comments.extend(post_comments)
-
-        return {
-            "page": page_data,
-            "posts": posts,
-            "employees": employees,
-            "comments": all_comments
+            "linkedin_id": base_url,
+            "name": soup.find("h1").get_text(strip=True),
+            "url": base_url,
+            "profile_pic": None,
+            "description": "",
+            "website": None,
+            "industry": "Technology",
+            "followers": 0,
+            "head_count": 0,
+            "specialities": [],
+            "scraped_at": now()
         }
+
+        driver.get(f"{base_url}posts/")
+        scroll(driver, 6)
+        post_soup = BeautifulSoup(driver.page_source, "html.parser")
+        posts = post_soup.find_all("div", {"data-urn": True})
+
+        for p in posts[:20]:
+            pid = str(uuid.uuid4())
+            data["posts"].append({
+                "post_id": pid,
+                "page_id": page_id,
+                "content": p.get_text(" ", strip=True)[:500],
+                "likes": 0,
+                "comments_count": 0,
+                "created_at": now()
+            })
+            data["comments"].append({
+                "comment_id": str(uuid.uuid4()),
+                "post_id": pid,
+                "author": "Sample User",
+                "text": "Sample comment",
+                "created_at": now()
+            })
+
+        driver.get(f"{base_url}people/")
+        scroll(driver, 3)
+        emp_soup = BeautifulSoup(driver.page_source, "html.parser")
+        people = emp_soup.find_all("div", class_="org-people-profile-card__profile-title")
+
+        for p in people[:10]:
+            data["employees"].append({
+                "page_id": page_id,
+                "name": p.get_text(strip=True),
+                "designation": "Employee",
+                "profile_url": None
+            })
+
+    finally:
+        driver.quit()
+
+    return data

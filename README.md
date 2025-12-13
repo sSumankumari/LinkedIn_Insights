@@ -22,7 +22,7 @@ MONGODB_URI=mongodb://localhost:27017/linkedin_db
 **3. Run**
 
 ```bash
-python server.py
+python main.py
 ```
 
 Go to **`http://localhost:8000/docs`** in your browser to test it.
