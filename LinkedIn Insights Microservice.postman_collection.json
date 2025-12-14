@@ -1,0 +1,276 @@
+{
+	"info": {
+		"_postman_id": "b33f0ea0-92c8-40f0-88bd-2e8370f5e7c0",
+		"name": "LinkedIn Insights Microservice",
+		"description": "API collection for the LinkedIn Insights Microservice assignment. Includes endpoints for scraping data, searching the database, and generating AI summaries.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27278367"
+	},
+	"item": [
+		{
+			"name": "Get Page Details",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/page/:page_id?refresh=false",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"page",
+						":page_id"
+					],
+					"query": [
+						{
+							"key": "refresh",
+							"value": "false",
+							"description": "If true, ignores the DB and forces a fresh scrape."
+						}
+					],
+					"variable": [
+						{
+							"key": "page_id",
+							"value": "deepsolv",
+							"description": "The unique ID from the LinkedIn URL (e.g., 'deepsolv', 'google')."
+						}
+					]
+				},
+				"description": "Retrieves company details.\n\n- **Default (refresh=false):** Checks the database first. If found, returns DB data.\n- **Force Refresh (refresh=true):** Ignores the database, triggers the scraper to fetch live data, updates the DB, and returns fresh data."
+			},
+			"response": []
+		},
+		{
+			"name": "Search Pages",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/pages/search?name=deep&industry=Technology&min_followers=0&page=1&limit=10",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"pages",
+						"search"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "deep",
+							"description": "Filter by partial name match (case-insensitive)."
+						},
+						{
+							"key": "industry",
+							"value": "Technology",
+							"description": "Filter by exact industry match."
+						},
+						{
+							"key": "min_followers",
+							"value": "0",
+							"description": "Filter for pages with at least this many followers."
+						},
+						{
+							"key": "max_followers",
+							"value": null,
+							"description": "Filter for pages with at most this many followers (optional).",
+							"disabled": true
+						},
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number for pagination (must be an integer)."
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Number of results per page (must be an integer)."
+						}
+					]
+				},
+				"description": "Searches for pages that have already been scraped and stored in the database. Supports filtering by name, industry, and follower count."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Page Posts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/page/:page_id/posts?page=1&limit=10",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"page",
+						":page_id",
+						"posts"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Pagination: Page number."
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Pagination: Items per page."
+						}
+					],
+					"variable": [
+						{
+							"key": "page_id",
+							"value": "deepsolv",
+							"description": "The ID of the page to fetch posts for."
+						}
+					]
+				},
+				"description": "Returns a list of posts associated with a specific Page ID. Results are sorted by creation date (newest first)."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Page Employees",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/page/:page_id/employees",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"page",
+						":page_id",
+						"employees"
+					],
+					"variable": [
+						{
+							"key": "page_id",
+							"value": "deepsolv"
+						}
+					]
+				},
+				"description": "Returns a list of employee profiles found during the scraping process for the given page."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Post Comments",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/post/:post_id/comments",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"post",
+						":post_id",
+						"comments"
+					],
+					"variable": [
+						{
+							"key": "post_id",
+							"value": "PASTE_UUID_HERE",
+							"description": "REQUIRED: Paste a valid 'post_id' (UUID) from the 'Get Page Posts' response."
+						}
+					]
+				},
+				"description": "Returns all comments associated with a specific Post ID. You must first run 'Get Page Posts' to obtain a valid `post_id`."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Page Followers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/page/:page_id/followers",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"page",
+						":page_id",
+						"followers"
+					],
+					"variable": [
+						{
+							"key": "page_id",
+							"value": "deepsolv"
+						}
+					]
+				},
+				"description": "Returns a list of followers for the page (if available/scraped)."
+			},
+			"response": []
+		},
+		{
+			"name": "Generate AI Summary",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/page/:page_id/summary",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"page",
+						":page_id",
+						"summary"
+					],
+					"variable": [
+						{
+							"key": "page_id",
+							"value": "deepsolv",
+							"description": "The page to summarize."
+						}
+					]
+				},
+				"description": "Uses AI (Google Gemini) to analyze the page's description and recent posts to provide a company overview, content tone analysis, and engagement assessment."
+			},
+			"response": []
+		}
+	]
+}
