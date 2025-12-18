@@ -142,15 +142,26 @@ A Postman collection (`LinkedIn Insights Microservice.postman_collection.json`) 
 ```
 LinkedIn_Insights/
 ├── config/
-│   └── db.py                 # MongoDB connection
+│   └── db.py                     # MongoDB connection
+│
 ├── controllers/
-│   ├── scraper.py            # Selenium scraping logic
-│   └── summary_generator.py  # Gemini AI integration
+│   ├── scraper.py                # Selenium scraping logic
+│   └── summary_generator.py      # Gemini AI integration
+│
+├── models/
+│   ├── comments.py               # Comment schema/model
+│   ├── follower.py               # Follower schema/model
+│   ├── page.py                   # LinkedIn page schema/model
+│   ├── posts.py                  # Post schema/model
+│   └── user.py                   # User schema/model
+│
 ├── routes/
-│   └── page_routes.py        # API routes
-├── main.py                   # Application entry point
-├── requirements.txt          # Python dependencies
-└── .env                      # Environment variables
+│   └── page_routes.py             # API routes
+│
+├── .gitignore
+├── LinkedIn Insights Microservice.postman_collection.json
+├── README.md
+├── main.py                        # Application entry point
 ```
 
 ## Disclaimer
